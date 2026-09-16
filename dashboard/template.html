@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vento — Marketplace Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#14213D;
+    --bg:#FFFFFF;
+    --panel:#F1F3F6;
+    --panel-dark:#14213D;
+    --risk:#C1440E;
+    --growth:#1B7F5B;
+    --line:#DADFE5;
+    --muted:#5B6472;
+    --accent2:#5B7FA6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',sans-serif; font-feature-settings:'tnum' 1, 'lnum' 1;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-family:'Fraunces',serif; font-weight:500; margin:0; }
+  .topbar{
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding:28px 40px 0 40px; border-bottom:1px solid var(--line);
+  }
+  .brand{ display:flex; align-items:baseline; gap:14px; }
+  .brand .mark{
+    width:30px; height:30px; background:var(--ink); display:inline-block;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform: translateY(4px);
+  }
+  .brand h1{ font-size:26px; letter-spacing:-0.01em; }
+  .brand .tagline{ color:var(--muted); font-size:13px; margin-left:2px; }
+  .subtitle-row{ padding-bottom:14px; }
+  .subtitle-row p{ margin:6px 0 18px 0; color:var(--muted); font-size:13px; max-width:640px; }
+  nav.tabs{ display:flex; gap:28px; }
+  nav.tabs button{
+    background:none; border:none; font-family:'Inter',sans-serif; font-size:14.5px;
+    font-weight:500; color:var(--muted); padding:0 0 14px 0; cursor:pointer;
+    border-bottom:2px solid transparent; letter-spacing:0.01em;
+  }
+  nav.tabs button.active{ color:var(--ink); border-bottom-color:var(--risk); }
+  nav.tabs button:hover{ color:var(--ink); }
+
+  main{ padding:36px 40px 60px 40px; max-width:1240px; margin:0 auto; }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .kpi-row{ display:flex; gap:0; margin-bottom:40px; flex-wrap:wrap; }
+  .kpi{
+    flex:1; min-width:170px; padding:0 26px 0 0; margin-right:26px;
+    border-right:1px solid var(--line);
+  }
+  .kpi:last-child{ border-right:none; }
+  .kpi .value{ font-family:'Fraunces',serif; font-size:32px; font-weight:500; line-height:1.1; }
+  .kpi .value.risk{ color:var(--risk); }
+  .kpi .value.growth{ color:var(--growth); }
+  .kpi .label{ color:var(--muted); font-size:12.5px; margin-top:6px; line-height:1.4; }
+
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+  .grid.single{ grid-template-columns:1fr; }
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:3px;
+    padding:22px 24px 18px 24px;
+  }
+  .panel h3{ font-size:16px; margin-bottom:4px; }
+  .panel .note{ color:var(--muted); font-size:12px; margin-bottom:14px; }
+  .chart-wrap{ position:relative; height:260px; width:100%; }
+  .panel canvas{ width:100% !important; height:100% !important; }
+
+  table.risk-table{ width:100%; border-collapse:collapse; font-size:13px; }
+  table.risk-table th{
+    text-align:left; font-weight:600; color:var(--muted); font-size:11.5px;
+    text-transform:none; padding:6px 10px 8px 0; border-bottom:1px solid var(--line);
+  }
+  table.risk-table td{ padding:9px 10px 9px 0; border-bottom:1px solid var(--line); }
+  table.risk-table td.mono{ font-variant-numeric:tabular-nums; }
+  table.risk-table tr:last-child td{ border-bottom:none; }
+  .pill{ display:inline-block; padding:2px 8px; border-radius:2px; font-size:11.5px; font-weight:600; }
+  .pill.high{ background:#FBE7DD; color:var(--risk); }
+  .pill.mid{ background:#FCEFC9; color:#8A6A00; }
+
+  .synth-note{
+    display:inline-block; margin-top:8px; font-size:11px; color:var(--muted);
+    border:1px solid var(--line); padding:2px 8px; border-radius:2px;
+  }
+
+  footer{
+    padding:24px 40px 40px 40px; max-width:1240px; margin:0 auto;
+    color:var(--muted); font-size:12px; border-top:1px solid var(--line); margin-top:20px;
+  }
+  footer a{ color:var(--ink); }
+
+  @media (max-width: 760px){
+    .grid{ grid-template-columns:1fr; }
+    .kpi{ min-width:130px; }
+    .topbar, main, footer{ padding-left:20px; padding-right:20px; }
+    nav.tabs{ overflow-x:auto; gap:18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="mark"></span>
+    <h1>Vento</h1>
+    <span class="tagline">Marketplace Intelligence</span>
+  </div>
+</div>
+<div class="topbar subtitle-row" style="border-bottom:none; padding-top:0;">
+  <div>
+    <p>Independent portfolio project — simulated client engagement built on real, anonymized Olist marketplace order data, plus a clearly-labeled synthetic marketing-spend table. Not a real company.</p>
+    <nav class="tabs" id="tabs">
+      <button data-view="executive" class="active">Executive Overview</button>
+      <button data-view="sales">Sales &amp; Customers</button>
+      <button data-view="delivery">Delivery &amp; Sellers</button>
+      <button data-view="payments">Payments &amp; Risk</button>
+    </nav>
+  </div>
+</div>
+
+<main>
+
+  <!-- EXECUTIVE -->
+  <section class="view active" id="view-executive">
+    <div class="kpi-row">
+      <div class="kpi"><div class="value">R$15.4M</div><div class="label">Delivered-order revenue</div></div>
+      <div class="kpi"><div class="value growth">+136%</div><div class="label">Revenue, 2018 vs 2017 (Feb–Jul, YoY)</div></div>
+      <div class="kpi"><div class="value">91.9%</div><div class="label">On-time delivery rate</div></div>
+      <div class="kpi"><div class="value">R$159.83</div><div class="label">Average order value</div></div>
+      <div class="kpi"><div class="value">5.6%</div><div class="label">Revenue from repeat customers</div></div>
+    </div>
+    <div class="grid single">
+      <div class="panel">
+        <h3>Monthly revenue &amp; order volume</h3>
+        <div class="note">Delivered orders only. Ramp-up and data-collection tail months (&lt;50 orders) excluded.</div>
+        <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SALES & CUSTOMERS -->
+  <section class="view" id="view-sales">
+    <div class="kpi-row">
+      <div class="kpi"><div class="value">Health &amp; Beauty</div><div class="label">Top category by revenue (R$1.44M)</div></div>
+      <div class="kpi"><div class="value">42%</div><div class="label">Of delivered orders are from São Paulo</div></div>
+      <div class="kpi"><div class="value">R$308</div><div class="label">Avg. lifetime spend, repeat customers</div></div>
+      <div class="kpi"><div class="value">R$161</div><div class="label">Avg. lifetime spend, one-time customers</div></div>
+    </div>
+    <div class="grid" style="margin-bottom:32px;">
+      <div class="panel">
+        <h3>Top 10 categories by revenue</h3>
+        <div class="note">No single category dominates — the top 5 sit within ~35% of each other.</div>
+        <div class="chart-wrap"><canvas id="chart-categories"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Top 10 states by revenue</h3>
+        <div class="note">São Paulo leads on volume, not average order size.</div>
+        <div class="chart-wrap"><canvas id="chart-states"></canvas></div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="panel">
+        <h3>Revenue: repeat vs. one-time customers</h3>
+        <div class="note">Repeat customers are 3.0% of the base but 5.6% of revenue.</div>
+        <div class="chart-wrap"><canvas id="chart-customer-split"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Highest customer lifetime value, by state</h3>
+        <div class="note">States min. 100 customers. Several overlap with the worst-delivery states — see Delivery tab.</div>
+        <div class="chart-wrap"><canvas id="chart-ltv-states"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DELIVERY & SELLERS -->
+  <section class="view" id="view-delivery">
+    <div class="kpi-row">
+      <div class="kpi"><div class="value">10 days</div><div class="label">Median delivery time</div></div>
+      <div class="kpi"><div class="value risk">46 days</div><div class="label">99th-percentile delivery time</div></div>
+      <div class="kpi"><div class="value">4.30 ★</div><div class="label">Avg. review score, on-time orders</div></div>
+      <div class="kpi"><div class="value risk">2.56 ★</div><div class="label">Avg. review score, late orders</div></div>
+    </div>
+    <div class="grid" style="margin-bottom:32px;">
+      <div class="panel">
+        <h3>Delivery time distribution</h3>
+        <div class="note">Days from purchase to customer delivery, delivered orders.</div>
+        <div class="chart-wrap"><canvas id="chart-delivery-bins"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Worst on-time delivery performance, by state</h3>
+        <div class="note">Min. 200 orders. Northeastern states dominate — a logistics-coverage story, not a seller-quality one.</div>
+        <div class="chart-wrap"><canvas id="chart-worst-states"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Highest-risk sellers</h3>
+      <div class="note">Composite of late-delivery rate and review score, sellers with 15+ orders. This is the list the client's original ask was looking for — distinct from "highest-volume" sellers.</div>
+      <table class="risk-table">
+        <thead><tr><th>Seller ID</th><th>Orders</th><th>Late rate</th><th>Avg. review</th><th>Risk level</th></tr></thead>
+        <tbody id="seller-risk-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PAYMENTS & RISK -->
+  <section class="view" id="view-payments">
+    <div class="kpi-row">
+      <div class="kpi"><div class="value">81.9%</div><div class="label">Of revenue paid by credit card</div></div>
+      <div class="kpi"><div class="value">3.51</div><div class="label">Avg. installments, credit-card orders</div></div>
+      <div class="kpi"><div class="value">0.26%</div><div class="label">Of orders flagged in payment reconciliation</div></div>
+      <div class="kpi"><div class="value risk">0.46%</div><div class="label">Debit-card mismatch rate (highest of any method)</div></div>
+    </div>
+    <div class="grid" style="margin-bottom:32px;">
+      <div class="panel">
+        <h3>Revenue by payment method</h3>
+        <div class="note">Credit card dominates and is the only method with meaningful installment use.</div>
+        <div class="chart-wrap"><canvas id="chart-payment-mix"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Average order value by installment count</h3>
+        <div class="note">Credit-card orders only. Installments clearly enable larger baskets.</div>
+        <div class="chart-wrap"><canvas id="chart-installments"></canvas></div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="panel">
+        <h3>Payment-reconciliation mismatch rate, by method</h3>
+        <div class="note">Mismatches concentrate in methods with a real-time bank-authorization step.</div>
+        <div class="chart-wrap"><canvas id="chart-reconciliation"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Marketing spend vs. revenue</h3>
+        <span class="synth-note">Marketing spend is synthetic — see case study</span>
+        <div class="chart-wrap"><canvas id="chart-marketing"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Vento Marketplace Intelligence — an independent portfolio project. Order, payment, delivery, seller,
+  product and review data is real, anonymized commercial data released by Olist. The client name and
+  narrative are fictional; the marketing-spend figures are synthetic. Built with Python, SQL, and this
+  dashboard. <a href="#">View the full case study →</a>
+</footer>
+
+<script>
+const DATA = {DATA_JSON};
+
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.color = '#5B6472';
+Chart.defaults.font.size = 11.5;
+Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.responsive = true;
+
+const INK = '#14213D', RISK = '#C1440E', GROWTH = '#1B7F5B', ACCENT2 = '#5B7FA6', LINE = '#DADFE5';
+
+function fmtK(v){
+  if (Math.abs(v) >= 1e6) return 'R$' + (v/1e6).toFixed(1) + 'M';
+  if (Math.abs(v) >= 1e3) return 'R$' + (v/1e3).toFixed(0) + 'K';
+  return 'R$' + v;
+}
+
+// ---- Executive: monthly revenue + orders ----
+new Chart(document.getElementById('chart-monthly'), {
+  data: {
+    labels: DATA.monthly_trend.labels,
+    datasets: [
+      { type:'bar', label:'Revenue', data: DATA.monthly_trend.revenue, backgroundColor: INK, order:2, yAxisID:'y' },
+      { type:'line', label:'Orders', data: DATA.monthly_trend.orders, borderColor: RISK, backgroundColor: RISK,
+        tension:0.3, pointRadius:2, order:1, yAxisID:'y1' },
+    ]
+  },
+  options: {
+    responsive:true,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{ legend:{ position:'top', align:'end', labels:{ boxWidth:10, usePointStyle:true } } },
+    scales:{
+      x:{ grid:{ display:false } },
+      y:{ position:'left', grid:{ color: LINE }, ticks:{ callback:v=>fmtK(v) } },
+      y1:{ position:'right', grid:{ display:false }, ticks:{ callback:v=>v } },
+    }
+  }
+});
+
+// ---- Sales: top categories ----
+new Chart(document.getElementById('chart-categories'), {
+  type:'bar',
+  data:{ labels: DATA.top_categories.labels, datasets:[{ data: DATA.top_categories.revenue, backgroundColor: ACCENT2 }] },
+  options:{ indexAxis:'y', plugins:{ legend:{ display:false } },
+    scales:{ x:{ grid:{ color:LINE }, ticks:{ callback:v=>fmtK(v) } }, y:{ grid:{ display:false } } } }
+});
+
+// ---- Sales: top states ----
+new Chart(document.getElementById('chart-states'), {
+  type:'bar',
+  data:{ labels: DATA.top_states_revenue.labels, datasets:[{ data: DATA.top_states_revenue.revenue, backgroundColor: INK }] },
+  options:{ plugins:{ legend:{ display:false } },
+    scales:{ y:{ grid:{ color:LINE }, ticks:{ callback:v=>fmtK(v) } }, x:{ grid:{ display:false } } } }
+});
+
+// ---- Sales: customer split ----
+new Chart(document.getElementById('chart-customer-split'), {
+  type:'doughnut',
+  data:{ labels: DATA.customer_split.labels, datasets:[{ data: DATA.customer_split.revenue, backgroundColor:[INK, RISK] }] },
+  options:{ plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, usePointStyle:true } },
+    tooltip:{ callbacks:{ label: ctx => ctx.label + ': ' + fmtK(ctx.parsed) } } }, cutout:'62%' }
+});
+
+// ---- Sales: top LTV states ----
+new Chart(document.getElementById('chart-ltv-states'), {
+  type:'bar',
+  data:{ labels: DATA.top_ltv_states.labels, datasets:[{ data: DATA.top_ltv_states.ltv, backgroundColor: GROWTH }] },
+  options:{ plugins:{ legend:{ display:false } },
+    scales:{ y:{ grid:{ color:LINE }, ticks:{ callback:v=>'R$'+v } }, x:{ grid:{ display:false } } } }
+});
+
+// ---- Delivery: time bins ----
+new Chart(document.getElementById('chart-delivery-bins'), {
+  type:'bar',
+  data:{ labels: DATA.delivery_time_bins.labels.map(l=>l+' days'), datasets:[{ data: DATA.delivery_time_bins.n, backgroundColor: INK }] },
+  options:{ plugins:{ legend:{ display:false } },
+    scales:{ y:{ grid:{ color:LINE } }, x:{ grid:{ display:false } } } }
+});
+
+// ---- Delivery: worst states ----
+new Chart(document.getElementById('chart-worst-states'), {
+  type:'bar',
+  data:{ labels: DATA.worst_late_states.labels, datasets:[{ data: DATA.worst_late_states.late_pct, backgroundColor: RISK }] },
+  options:{ plugins:{ legend:{ display:false } },
+    scales:{ y:{ grid:{ color:LINE }, ticks:{ callback:v=>v+'%' } }, x:{ grid:{ display:false } } } }
+});
+
+// ---- Seller risk table ----
+const tbody = document.getElementById('seller-risk-body');
+DATA.seller_risk_table.forEach(row => {
+  const level = row.risk_score > 1 ? 'high' : 'mid';
+  const levelLabel = row.risk_score > 1 ? 'High' : 'Elevated';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td class="mono">${row.seller_id.slice(0,12)}…</td>
+                  <td class="mono">${row.n_orders}</td>
+                  <td class="mono">${row.late_rate}%</td>
+                  <td class="mono">${row.avg_score}</td>
+                  <td><span class="pill ${level}">${levelLabel}</span></td>`;
+  tbody.appendChild(tr);
+});
+
+// ---- Payments: mix ----
+new Chart(document.getElementById('chart-payment-mix'), {
+  type:'bar',
+  data:{ labels: DATA.payment_mix.labels, datasets:[{ data: DATA.payment_mix.revenue, backgroundColor: [INK, ACCENT2, RISK, GROWTH] }] },
+  options:{ indexAxis:'y', plugins:{ legend:{ display:false } },
+    scales:{ x:{ grid:{ color:LINE }, ticks:{ callback:v=>fmtK(v) } }, y:{ grid:{ display:false } } } }
+});
+
+// ---- Payments: installments vs AOV ----
+new Chart(document.getElementById('chart-installments'), {
+  type:'line',
+  data:{ labels: DATA.installments_aov.labels, datasets:[{ data: DATA.installments_aov.aov, borderColor: GROWTH,
+    backgroundColor: GROWTH, tension:0.25, pointRadius:3 }] },
+  options:{ plugins:{ legend:{ display:false } },
+    scales:{ y:{ grid:{ color:LINE }, ticks:{ callback:v=>'R$'+v } }, x:{ grid:{ display:false }, title:{ display:true, text:'Installments' } } } }
+});
+
+// ---- Payments: reconciliation by method ----
+new Chart(document.getElementById('chart-reconciliation'), {
+  type:'bar',
+  data:{ labels: DATA.reconciliation_by_payment.labels, datasets:[{ data: DATA.reconciliation_by_payment.pct, backgroundColor: RISK }] },
+  options:{ plugins:{ legend:{ display:false } },
+    scales:{ y:{ grid:{ color:LINE }, ticks:{ callback:v=>v+'%' } }, x:{ grid:{ display:false } } } }
+});
+
+// ---- Payments: marketing vs revenue ----
+new Chart(document.getElementById('chart-marketing'), {
+  data:{ labels: DATA.marketing_vs_revenue.labels, datasets:[
+    { type:'bar', label:'Revenue', data: DATA.marketing_vs_revenue.revenue, backgroundColor: INK, yAxisID:'y' },
+    { type:'line', label:'Marketing spend (synthetic)', data: DATA.marketing_vs_revenue.spend, borderColor: RISK,
+      backgroundColor: RISK, tension:0.3, pointRadius:2, yAxisID:'y1' },
+  ]},
+  options:{ interaction:{ mode:'index', intersect:false },
+    plugins:{ legend:{ position:'top', align:'end', labels:{ boxWidth:10, usePointStyle:true } } },
+    scales:{
+      x:{ grid:{ display:false } },
+      y:{ position:'left', grid:{ color:LINE }, ticks:{ callback:v=>fmtK(v) } },
+      y1:{ position:'right', grid:{ display:false }, ticks:{ callback:v=>fmtK(v) } },
+    } }
+});
+
+// ---- Tab switching ----
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-view]');
+  if (!btn) return;
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + btn.dataset.view).classList.add('active');
+});
+</script>
+</body>
+</html>

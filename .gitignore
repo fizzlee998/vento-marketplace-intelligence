@@ -1,0 +1,7 @@
+data/processed/
+sql/*.db
+dashboard/index.html
+dashboard/data.json
+reports/pipeline_runs/
+reports/data_quality_report_latest.md
+__pycache__/
